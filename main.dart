@@ -1,75 +1,82 @@
-
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(CalculatorApp());
+  runApp(TodoApp());
 }
 
-class CalculatorApp extends StatelessWidget {
+class TodoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Calculator',
+      title: 'To-Do App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: CalculatorHomePage(),
+      home: TodoHomePage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class CalculatorHomePage extends StatefulWidget {
+class TodoHomePage extends StatefulWidget {
   @override
-  _CalculatorHomePageState createState() => _CalculatorHomePageState();
+  _TodoHomePageState createState() => _TodoHomePageState();
 }
 
-class _CalculatorHomePageState extends State<CalculatorHomePage> {
-  String _output = "0";
-  String _currentInput = "";
-  String _operator = "";
-  double _num1 = 0;
-  double _num2 = 0;
+class _TodoHomePageState extends State<TodoHomePage> {
+  final List<String> _todoItems = []; // List to store to-do items
+  final TextEditingController _textController = TextEditingController();
 
-  void _buttonPressed(String buttonText) {
+  void _addTodoItem(String task) {
     setState(() {
-      if (buttonText == "C") {
-        _output = "0";
-        _currentInput = "";
-        _operator = "";
-        _num1 = 0;
-        _num2 = 0;
-      } else if (buttonText == "+" || buttonText == "-" || buttonText == "*" || buttonText == "/") {
-        _num1 = double.parse(_currentInput);
-        _operator = buttonText;
-        _currentInput = "";
-      } else if (buttonText == "=") {
-        _num2 = double.parse(_currentInput);
-        if (_operator == "+") {
-          _output = (_num1 + _num2).toString();
-        } else if (_operator == "-") {
-          _output = (_num1 - _num2).toString();
-        } else if (_operator == "*") {
-          _output = (_num1 * _num2).toString();
-        } else if (_operator == "/") {
-          _output = (_num1 / _num2).toString();
-        }
-        _num1 = 0;
-        _num2 = 0;
-        _operator = "";
-        _currentInput = "";
-      } else {
-        _currentInput += buttonText;
-        _output = _currentInput;
-      }
+      _todoItems.add(task);
+    });
+    _textController.clear(); // Clear the input field
+  }
+
+  void _removeTodoItem(int index) {
+    setState(() {
+      _todoItems.removeAt(index);
     });
   }
 
-  Widget _buildButton(String buttonText) {
-    return Expanded(
-      child: ElevatedButton(
-        onPressed: () => _buttonPressed(buttonText),
-        child: Text(buttonText, style: TextStyle(fontSize: 24)),
-      ),
+  void _promptRemoveTodoItem(int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Mark "${_todoItems[index]}" as done?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('CANCEL'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text('MARK AS DONE'),
+              onPressed: () {
+                _removeTodoItem(index);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTodoList() {
+    return ListView.builder(
+      itemCount: _todoItems.length,
+      itemBuilder: (context, index) {
+        return _buildTodoItem(_todoItems[index], index);
+      },
+    );
+  }
+
+  Widget _buildTodoItem(String todoText, int index) {
+    return ListTile(
+      title: Text(todoText),
+      onTap: () => _promptRemoveTodoItem(index),
     );
   }
 
@@ -77,53 +84,43 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Calculator'),
+        title: Text('To-Do List'),
       ),
       body: Column(
         children: <Widget>[
-          Container(
-            padding: EdgeInsets.all(20),
-            alignment: Alignment.centerRight,
-            child: Text(
-              _output,
-              style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Divider(),
-          ),
-          Column(children: [
-            Row(children: [
-              _buildButton("7"),
-              _buildButton("8"),
-              _buildButton("9"),
-              _buildButton("/")
-            ]),
-            Row(children: [
-              _buildButton("4"),
-              _buildButton("5"),
-              _buildButton("6"),
-              _buildButton("*")
-            ]),
-            Row(children: [
-              _buildButton("1"),
-              _buildButton("2"),
-              _buildButton("3"),
-              _buildButton("-")
-            ]),
-            Row(children: [
-              _buildButton("."),
-              _buildButton("0"),
-              _buildButton("00"),
-              _buildButton("+")
-            ]),
-            Row(children: [
-              _buildButton("C"),
-              _buildButton("="),
-            ]),
-          ])
+          _buildInputField(),
+          Expanded(child: _buildTodoList()),
         ],
       ),
     );
+  }
+
+  Widget _buildInputField() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                labelText: 'Enter a new task',
+              ),
+              onSubmitted: _handleSubmitted,
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () => _handleSubmitted(_textController.text),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleSubmitted(String text) {
+    if (text.isNotEmpty) {
+      _addTodoItem(text);
+    }
   }
 }
